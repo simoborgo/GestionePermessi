@@ -22,7 +22,6 @@ export async function middleware(req: NextRequest) {
     return response;
   }
 
-  // Protezione rotte admin
   if (pathname.startsWith("/admin") && session.ruolo !== "RESPONSABILE") {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
