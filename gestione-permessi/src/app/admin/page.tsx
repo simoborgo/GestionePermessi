@@ -22,7 +22,7 @@ export default async function AdminPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const pending = richieste.filter((r) => r.stato === "PENDING").length;
+  const pending = richieste.filter((r: { stato: string }) => r.stato === "PENDING").length;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-offwhite)" }}>
