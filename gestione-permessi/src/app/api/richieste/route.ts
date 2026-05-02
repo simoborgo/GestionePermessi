@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       where: { responsabileId: session.userId },
       select: { id: true },
     });
-    const ids = dipendenti.map((d) => d.id);
+    const ids = dipendenti.map((d: { id: string }) => d.id);
     ids.push(session.userId);
     where.userId = { in: ids };
   }
