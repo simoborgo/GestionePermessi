@@ -3,7 +3,7 @@ import { verificaToken } from "@/lib/auth";
 
 const pubbliche = ["/login", "/api/auth/login"];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const isPublic = pubbliche.some((p) => pathname.startsWith(p));
