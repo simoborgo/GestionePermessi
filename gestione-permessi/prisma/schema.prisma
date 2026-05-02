@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Ruolo {
+  DIPENDENTE
+  RESPONSABILE
+}
+
+enum TipoRichiesta {
+  PERMESSO
+  FERIE
+}
+
+enum StatoRichiesta {
+  PENDING
+  APPROVATA
+  RIFIUTATA
+}
+
+model User {
+  id             String      @id @default(cuid())
+  email          String      @unique
+  pin            String
+  nome           String
+  cognome        String
+  ruolo          Ruolo       @default(DIPENDENTE)
+  attivo         Boolean     @default(true)
+  responsabileId String?
+  responsabile   User?       @relation("ResponsabileDipendenti", fields: [responsabileId], references: [id])
+  dipendenti     User[]      @relation("ResponsabileDipendenti")
+  richieste      Richiesta[] @relation("RichiesteUtente")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model Richiesta {
+  id          String         @id @default(cuid())
+  tipo        TipoRichiesta
+  stato       StatoRichiesta @default(PENDING)
+  dataInizio  DateTime
+  dataFine    DateTime
+  oraInizio   String?
+  oraFine     String?
+  note        String?
+  motivazione String?
+  userId      String
+  utente      User           @relation("RichiesteUtente", fields: [userId], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}

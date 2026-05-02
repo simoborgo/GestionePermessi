@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Jost:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* Modar Brand Colors */
+  --color-primary:       #F08F25;
+  --color-primary-light: #F5A845;
+  --color-primary-dark:  #C06A10;
+  --color-black:         #1A1918;
+  --color-grey-mid:      #6B6560;
+  --color-grey-icon:     #A4A4A6;
+  --color-offwhite:      #F5F2EE;
+
+  /* Typography */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-ui:      'Jost', 'Inter', sans-serif;
+
+  /* Radius */
+  --radius-badge:  2px;
+  --radius-button: 4px;
+  --radius-modal:  8px;
+
+  /* Focus */
+  --focus-ring: 0 0 0 3px rgba(240, 143, 37, 0.30);
+}
+
+@theme inline {
+  --color-brand:        #F08F25;
+  --color-brand-light:  #F5A845;
+  --color-brand-dark:   #C06A10;
+  --color-ink:          #1A1918;
+  --color-muted:        #6B6560;
+  --color-icon:         #A4A4A6;
+  --color-surface:      #F5F2EE;
+}
+
+body {
+  background-color: var(--color-offwhite);
+  color: var(--color-black);
+  font-family: var(--font-ui);
+}
+
+/* Focus ring globale per accessibilità */
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
