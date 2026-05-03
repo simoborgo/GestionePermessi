@@ -36,23 +36,46 @@ export async function GET(req: NextRequest) {
     include: { utente: { select: { nome: true, cognome: true } } },
   });
 
-  const eventi = richieste.map((r) => ({
-    id: r.id,
-    title:
-      r.tipo === "FERIE"
-        ? `${r.utente.nome} ${r.utente.cognome} - Ferie`
-        : `${r.utente.nome} ${r.utente.cognome} - Permesso ${r.oraInizio}-${r.oraFine}`,
-    start: r.dataInizio,
-    end: r.dataFine,
-    allDay: r.tipo === "FERIE",
-    color:
-      r.stato === "PENDING"
-        ? "#F59E0B"
-        : r.tipo === "FERIE"
-        ? "#3B82F6"
-        : "#10B981",
-    extendedProps: { tipo: r.tipo, stato: r.stato },
-  }));
+  const eventi = richieste.map((r) => {
+    const dataInizioStr = r.dataInizio.toISOString().split("T")[0];
+    const dataFineStr = r.dataFine.toISOString().split("T")[0];
+
+    const start =
+      r.tipo === "PERMESSO" && r.oraInizio
+        ? `${dataInizioStr}T${r.oraInizio}:00`
+        : dataInizioStr;
+
+    // Per FERIE FullCalendar usa end esclusivo, aggiungiamo 1 giorno
+    let end: string;
+    if (r.tipo === "FERIE") {
+      const d = new Date(r.dataFine);
+      d.setDate(d.getDate() + 1);
+      end = d.toISOString().split("T")[0];
+    } else {
+      end =
+        r.oraFine
+          ? `${dataFineStr}T${r.oraFine}:00`
+          : dataFineStr;
+    }
+
+    return {
+      id: r.id,
+      title:
+        r.tipo === "FERIE"
+          ? `${r.utente.nome} ${r.utente.cognome} - Ferie`
+          : `${r.utente.nome} ${r.utente.cognome} - Permesso ${r.oraInizio}-${r.oraFine}`,
+      start,
+      end,
+      allDay: r.tipo === "FERIE",
+      color:
+        r.stato === "PENDING"
+          ? "#F59E0B"
+          : r.tipo === "FERIE"
+          ? "#3B82F6"
+          : "#10B981",
+      extendedProps: { tipo: r.tipo, stato: r.stato },
+    };
+  });
 
   return NextResponse.json({ eventi });
 }
