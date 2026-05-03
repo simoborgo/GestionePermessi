@@ -60,19 +60,12 @@ export async function GET(req: NextRequest) {
 
     return {
       id: r.id,
-      title:
-        r.tipo === "FERIE"
-          ? `${r.utente.nome} ${r.utente.cognome} - Ferie`
-          : `${r.utente.nome} ${r.utente.cognome} - Permesso ${r.oraInizio}-${r.oraFine}`,
+      title: r.utente.cognome,
       start,
       end,
       allDay: r.tipo === "FERIE",
-      color:
-        r.stato === "PENDING"
-          ? "#F59E0B"
-          : r.tipo === "FERIE"
-          ? "#3B82F6"
-          : "#10B981",
+      display: "list-item",
+      color: r.stato === "PENDING" ? "#F59E0B" : "#10B981",
       extendedProps: { tipo: r.tipo, stato: r.stato },
     };
   });

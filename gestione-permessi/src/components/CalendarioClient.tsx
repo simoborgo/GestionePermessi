@@ -66,7 +66,7 @@ export default function CalendarioClient() {
             failureCallback(err as Error);
           }
         }}
-        eventDisplay="block"
+        eventDisplay="list-item"
         dayMaxEvents={3}
         buttonText={{ today: "Oggi", month: "Mese", week: "Settimana" }}
       />
