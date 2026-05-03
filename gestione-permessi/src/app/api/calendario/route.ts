@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 
-// GET: eventi per il calendario (APPROVATE nel range richiesto)
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ errore: "Non autenticato" }, { status: 401 });
@@ -12,17 +11,24 @@ export async function GET(req: NextRequest) {
   const end = searchParams.get("end");
 
   const where: Record<string, unknown> = {
-    stato: "APPROVATA",
+    stato: { in: ["APPROVATA", "PENDING"] },
   };
 
   if (start && end) {
-    where.dataInizio = { gte: new Date(start) };
-    where.dataFine = { lte: new Date(end) };
+    where.dataInizio = { lte: new Date(end) };
+    where.dataFine = { gte: new Date(start) };
   }
 
-  // Responsabili vedono tutto il team, dipendenti solo se stessi
   if (session.ruolo === "DIPENDENTE") {
     where.userId = session.userId;
+  } else {
+    const dipendenti = await prisma.user.findMany({
+      where: { responsabileId: session.userId },
+      select: { id: true },
+    });
+    const ids = dipendenti.map((d: { id: string }) => d.id);
+    ids.push(session.userId);
+    where.userId = { in: ids };
   }
 
   const richieste = await prisma.richiesta.findMany({
@@ -39,7 +45,12 @@ export async function GET(req: NextRequest) {
     start: r.dataInizio,
     end: r.dataFine,
     allDay: r.tipo === "FERIE",
-    color: r.tipo === "FERIE" ? "#3B82F6" : "#F59E0B",
+    color:
+      r.stato === "PENDING"
+        ? "#F59E0B"
+        : r.tipo === "FERIE"
+        ? "#3B82F6"
+        : "#10B981",
     extendedProps: { tipo: r.tipo, stato: r.stato },
   }));
 
