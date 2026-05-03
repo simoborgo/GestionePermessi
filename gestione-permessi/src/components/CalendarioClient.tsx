@@ -2,11 +2,15 @@
 
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import itLocale from "@fullcalendar/core/locales/it";
+import { EventInput } from "@fullcalendar/core";
 
-export default function CalendarioClient() {
+interface Props {
+  eventi: EventInput[];
+}
+
+export default function CalendarioClient({ eventi }: Props) {
   return (
     <>
       <style>{`
@@ -45,30 +49,25 @@ export default function CalendarioClient() {
         .fc .fc-daygrid-day.fc-day-today {
           background-color: #FEF3E4 !important;
         }
+        .fc .fc-daygrid-event-dot {
+          border-width: 5px !important;
+        }
       `}</style>
 
       <FullCalendar
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        plugins={[dayGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
         locale={itLocale}
         headerToolbar={{
           left: "prev,next today",
           center: "title",
-          right: "dayGridMonth,timeGridWeek",
+          right: "",
         }}
         height="auto"
-        events={async (info, successCallback, failureCallback) => {
-          try {
-            const res = await fetch(`/api/calendario?start=${info.startStr}&end=${info.endStr}`);
-            const dati = await res.json();
-            successCallback(dati.eventi);
-          } catch (err) {
-            failureCallback(err as Error);
-          }
-        }}
+        events={eventi}
         eventDisplay="list-item"
-        dayMaxEvents={3}
-        buttonText={{ today: "Oggi", month: "Mese", week: "Settimana" }}
+        dayMaxEvents={5}
+        buttonText={{ today: "Oggi" }}
       />
     </>
   );
