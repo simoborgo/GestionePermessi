@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verificaToken } from "@/lib/auth";
 
-const pubbliche = ["/login", "/api/auth/login"];
+const pubbliche = ["/login", "/api/auth/login", "/api/riepilogo-giornaliero"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
