@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verificaToken } from "@/lib/auth";
 
-const pubbliche = ["/login", "/api/auth/login", "/api/riepilogo-giornaliero"];
+const paginaProtette = ["/admin", "/dashboard", "/nuova-richiesta"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const isPublic = pubbliche.some((p) => pathname.startsWith(p));
-  if (isPublic) return NextResponse.next();
+  // Le API si proteggono da sole, il proxy protegge solo le pagine
+  if (!paginaProtette.some((p) => pathname.startsWith(p))) {
+    return NextResponse.next();
+  }
 
   const token = req.cookies.get("auth-token")?.value;
 
