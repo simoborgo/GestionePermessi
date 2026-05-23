@@ -48,6 +48,7 @@ model Richiesta {
   oraInizio   String?
   oraFine     String?
   note        String?
+  legge104    Boolean        @default(false)
   motivazione String?
   userId      String
   utente      User           @relation("RichiesteUtente", fields: [userId], references: [id])

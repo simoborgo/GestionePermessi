@@ -13,6 +13,7 @@ interface Richiesta {
   oraInizio: string | null;
   oraFine: string | null;
   note: string | null;
+  legge104: boolean;
   motivazione: string | null;
   createdAt: string;
   utente: { nome: string; cognome: string; email: string };
@@ -152,7 +153,11 @@ export default function GestioneRichieste({ richiesteIniziali }: { richiesteIniz
                         {r.utente.nome} {r.utente.cognome}
                       </p>
                       <p className="text-xs mt-0.5" style={{ color: "var(--color-grey-mid)" }}>
-                        {r.tipo === "FERIE" ? "Ferie" : "Permesso"} ·{" "}
+                        {r.tipo === "FERIE" ? "Ferie" : "Permesso"}
+                        {r.legge104 && (
+                          <span className="ml-1.5 px-1.5 py-0.5 text-xs font-bold uppercase" style={{ backgroundColor: "#EDE9FE", color: "#6D28D9", borderRadius: "4px" }}>L.104</span>
+                        )}
+                        {" · "}
                         {format(new Date(r.dataInizio), "d MMM yyyy", { locale: it })}
                         {r.dataFine !== r.dataInizio &&
                           ` — ${format(new Date(r.dataFine), "d MMM yyyy", { locale: it })}`}

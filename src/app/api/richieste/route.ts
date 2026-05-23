@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ errore: "Non autenticato" }, { status: 401 });
 
   const body = await req.json();
-  const { tipo, dataInizio, dataFine, oraInizio, oraFine, note } = body;
+  const { tipo, dataInizio, dataFine, oraInizio, oraFine, note, legge104 } = body;
 
   if (!tipo || !dataInizio || !dataFine) {
     return NextResponse.json({ errore: "Dati mancanti" }, { status: 400 });
@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
       oraInizio: tipo === "PERMESSO" ? oraInizio : null,
       oraFine: tipo === "PERMESSO" ? oraFine : null,
       note,
+      legge104: legge104 === true,
       userId: session.userId,
     },
     include: { utente: { select: { nome: true, cognome: true, email: true } } },
