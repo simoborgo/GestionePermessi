@@ -53,6 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         oraFine: richiesta.oraFine,
         stato: richiesta.stato,
         motivazione: richiesta.motivazione,
+        legge104: richiesta.legge104,
       },
       dipendente: richiesta.utente,
       responsabile: {
