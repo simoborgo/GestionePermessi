@@ -37,3 +37,34 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   return NextResponse.json({ utente, ...(pinInCiaro ? { pinInCiaro } : {}) });
 }
+
+// DELETE: elimina definitivamente un utente e le sue richieste (solo RESPONSABILE)
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ errore: "Non autenticato" }, { status: 401 });
+  if (session.ruolo !== "RESPONSABILE") {
+    return NextResponse.json({ errore: "Accesso negato" }, { status: 403 });
+  }
+
+  const { id } = await params;
+
+  if (id === session.userId) {
+    return NextResponse.json({ errore: "Non puoi eliminare il tuo stesso account" }, { status: 400 });
+  }
+
+  const utente = await prisma.user.findUnique({ where: { id } });
+  if (!utente) return NextResponse.json({ errore: "Utente non trovato" }, { status: 404 });
+
+  const dipendentiAssegnati = await prisma.user.count({ where: { responsabileId: id } });
+  if (dipendentiAssegnati > 0) {
+    return NextResponse.json(
+      { errore: "Riassegna prima i dipendenti di questo responsabile a qualcun altro" },
+      { status: 400 }
+    );
+  }
+
+  await prisma.richiesta.deleteMany({ where: { userId: id } });
+  await prisma.user.delete({ where: { id } });
+
+  return NextResponse.json({ successo: true });
+}

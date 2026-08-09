@@ -67,21 +67,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json({ richiesta });
 }
 
-// DELETE: cancella richiesta (solo il proprietario, solo se PENDING)
+// DELETE: cancella richiesta. Il proprietario può farlo solo se PENDING;
+// il responsabile può eliminare richieste del proprio team a qualsiasi stato.
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ errore: "Non autenticato" }, { status: 401 });
 
   const { id } = await params;
 
-  const richiesta = await prisma.richiesta.findUnique({ where: { id } });
+  const richiesta = await prisma.richiesta.findUnique({
+    where: { id },
+    include: { utente: { select: { responsabileId: true } } },
+  });
   if (!richiesta) return NextResponse.json({ errore: "Non trovata" }, { status: 404 });
 
-  if (richiesta.userId !== session.userId) {
+  const isProprietario = richiesta.userId === session.userId;
+  const isResponsabileDelTeam = session.ruolo === "RESPONSABILE" && richiesta.utente.responsabileId === session.userId;
+
+  if (!isProprietario && !isResponsabileDelTeam) {
     return NextResponse.json({ errore: "Accesso negato" }, { status: 403 });
   }
 
-  if (richiesta.stato !== "PENDING") {
+  if (!isResponsabileDelTeam && richiesta.stato !== "PENDING") {
     return NextResponse.json({ errore: "Puoi cancellare solo richieste in attesa" }, { status: 400 });
   }
 

@@ -15,7 +15,7 @@ interface Utente {
 
 interface Responsabile { id: string; nome: string; cognome: string; }
 
-type ModalMode = "crea" | "modifica" | "reset-pin";
+type ModalMode = "crea" | "modifica" | "reset-pin" | "elimina";
 
 const inputStyle = {
   width: "100%",
@@ -68,6 +68,12 @@ export default function GestioneUtenti({
     setModalMode("reset-pin");
   }
 
+  function apriElimina(u: Utente) {
+    setUtenteSelezionato(u);
+    reset();
+    setModalMode("elimina");
+  }
+
   function generaPin() {
     const pin = String(Math.floor(10000 + Math.random() * 90000));
     setForm((f) => ({ ...f, pin }));
@@ -112,6 +118,19 @@ export default function GestioneUtenti({
       const dati = await res.json();
       if (!res.ok) { setErrore(dati.errore); return; }
       setUtenti((prev) => prev.map((u) => (u.id === dati.utente.id ? { ...u, ...dati.utente } : u)));
+      setModalMode(null);
+    } finally { setCaricamento(false); }
+  }
+
+  async function eliminaUtente() {
+    if (!utenteSelezionato) return;
+    setErrore("");
+    setCaricamento(true);
+    try {
+      const res = await fetch(`/api/utenti/${utenteSelezionato.id}`, { method: "DELETE" });
+      const dati = await res.json();
+      if (!res.ok) { setErrore(dati.errore); return; }
+      setUtenti((prev) => prev.filter((u) => u.id !== utenteSelezionato.id));
       setModalMode(null);
     } finally { setCaricamento(false); }
   }
@@ -237,6 +256,18 @@ export default function GestioneUtenti({
                     )}
                   </svg>
                 </button>
+
+                <button
+                  onClick={() => apriElimina(u)}
+                  className="p-1.5 transition"
+                  style={{ color: "var(--color-grey-icon)", borderRadius: "var(--radius-button)" }}
+                  title="Elimina"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" />
+                  </svg>
+                </button>
               </div>
             </div>
           ))}
@@ -258,6 +289,7 @@ export default function GestioneUtenti({
                 {modalMode === "crea" && "Nuovo utente"}
                 {modalMode === "modifica" && "Modifica utente"}
                 {modalMode === "reset-pin" && "Reset PIN"}
+                {modalMode === "elimina" && "Elimina utente"}
               </h3>
             </div>
 
@@ -337,6 +369,17 @@ export default function GestioneUtenti({
                 </div>
               )}
 
+              {modalMode === "elimina" && (
+                <div
+                  className="text-sm px-4 py-3"
+                  style={{ backgroundColor: "#FEF2F2", border: "1px solid #FECACA", color: "#B91C1C", borderRadius: "var(--radius-button)" }}
+                >
+                  Sei sicuro di voler eliminare definitivamente{" "}
+                  <strong>{utenteSelezionato?.nome} {utenteSelezionato?.cognome}</strong>? Verranno cancellate anche
+                  tutte le sue richieste. L&apos;azione è irreversibile.
+                </div>
+              )}
+
               {errore && (
                 <div
                   className="text-sm px-4 py-3"
@@ -370,16 +413,28 @@ export default function GestioneUtenti({
               </button>
               {!successo && (
                 <button
-                  onClick={modalMode === "crea" ? creaUtente : modalMode === "modifica" ? modificaUtente : resetPin}
+                  onClick={
+                    modalMode === "crea" ? creaUtente
+                    : modalMode === "modifica" ? modificaUtente
+                    : modalMode === "elimina" ? eliminaUtente
+                    : resetPin
+                  }
                   disabled={caricamento}
                   className="flex-1 py-2.5 text-white text-sm font-bold uppercase tracking-widest transition"
                   style={{
-                    backgroundColor: caricamento ? "var(--color-primary-light)" : "var(--color-primary)",
+                    backgroundColor: modalMode === "elimina"
+                      ? "#B91C1C"
+                      : caricamento ? "var(--color-primary-light)" : "var(--color-primary)",
                     borderRadius: "var(--radius-button)",
                     fontFamily: "var(--font-ui)",
+                    opacity: caricamento ? 0.5 : 1,
                   }}
                 >
-                  {caricamento ? "..." : modalMode === "crea" ? "Crea utente" : modalMode === "modifica" ? "Salva" : "Reimposta PIN"}
+                  {caricamento ? "..."
+                    : modalMode === "crea" ? "Crea utente"
+                    : modalMode === "modifica" ? "Salva"
+                    : modalMode === "elimina" ? "Elimina definitivamente"
+                    : "Reimposta PIN"}
                 </button>
               )}
             </div>

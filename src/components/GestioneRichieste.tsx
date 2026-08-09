@@ -84,6 +84,23 @@ export default function GestioneRichieste({
   const [erroreInserimento, setErroreInserimento] = useState("");
   const [caricamentoInserimento, setCaricamentoInserimento] = useState(false);
 
+  const [richiestaDaEliminare, setRichiestaDaEliminare] = useState<Richiesta | null>(null);
+  const [erroreEliminazione, setErroreEliminazione] = useState("");
+  const [eliminazione, setEliminazione] = useState(false);
+
+  async function eliminaRichiesta() {
+    if (!richiestaDaEliminare) return;
+    setErroreEliminazione("");
+    setEliminazione(true);
+    try {
+      const res = await fetch(`/api/richieste/${richiestaDaEliminare.id}`, { method: "DELETE" });
+      const dati = await res.json();
+      if (!res.ok) { setErroreEliminazione(dati.errore || "Errore nell'eliminazione"); return; }
+      setRichieste((prev) => prev.filter((r) => r.id !== richiestaDaEliminare.id));
+      setRichiestaDaEliminare(null);
+    } finally { setEliminazione(false); }
+  }
+
   async function inserisciRichiesta() {
     setErroreInserimento("");
     if (!formInserimento.dipendenteId) {
@@ -291,6 +308,17 @@ export default function GestioneRichieste({
                         Gestisci
                       </button>
                     )}
+                    <button
+                      onClick={() => setRichiestaDaEliminare(r)}
+                      className="p-1.5 transition"
+                      style={{ color: "var(--color-grey-icon)", borderRadius: "var(--radius-button)" }}
+                      title="Elimina"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -385,6 +413,73 @@ export default function GestioneRichieste({
                 }}
               >
                 Approva
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal conferma eliminazione */}
+      {richiestaDaEliminare && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div
+            className="bg-white w-full max-w-md shadow-xl"
+            style={{ borderRadius: "var(--radius-modal)" }}
+          >
+            <div className="p-6 border-b" style={{ borderColor: "var(--color-offwhite)" }}>
+              <h3
+                className="text-xl font-semibold"
+                style={{ fontFamily: "var(--font-display)", color: "var(--color-black)" }}
+              >
+                Elimina richiesta
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div
+                className="text-sm px-4 py-3"
+                style={{ backgroundColor: "#FEF2F2", border: "1px solid #FECACA", color: "#B91C1C", borderRadius: "var(--radius-button)" }}
+              >
+                Sei sicuro di voler eliminare la richiesta di{" "}
+                <strong>{richiestaDaEliminare.utente.nome} {richiestaDaEliminare.utente.cognome}</strong>{" "}
+                ({richiestaDaEliminare.tipo === "FERIE" ? "Ferie" : "Permesso"}, stato attuale:{" "}
+                {richiestaDaEliminare.stato === "PENDING" ? "In attesa" : richiestaDaEliminare.stato === "APPROVATA" ? "Approvata" : "Rifiutata"})?
+                L&apos;azione è irreversibile.
+              </div>
+              {erroreEliminazione && (
+                <div
+                  className="text-sm px-4 py-3"
+                  style={{ backgroundColor: "#FEF2F2", border: "1px solid #FECACA", color: "#B91C1C", borderRadius: "var(--radius-button)" }}
+                >
+                  {erroreEliminazione}
+                </div>
+              )}
+            </div>
+            <div className="p-6 pt-0 flex gap-3">
+              <button
+                onClick={() => { setRichiestaDaEliminare(null); setErroreEliminazione(""); }}
+                disabled={eliminazione}
+                className="flex-1 py-2.5 text-sm font-bold uppercase tracking-widest border transition"
+                style={{
+                  borderColor: "var(--color-grey-icon)",
+                  color: "var(--color-grey-mid)",
+                  borderRadius: "var(--radius-button)",
+                  fontFamily: "var(--font-ui)",
+                }}
+              >
+                Annulla
+              </button>
+              <button
+                onClick={eliminaRichiesta}
+                disabled={eliminazione}
+                className="flex-1 py-2.5 text-white text-sm font-bold uppercase tracking-widest transition"
+                style={{
+                  backgroundColor: "#B91C1C",
+                  borderRadius: "var(--radius-button)",
+                  fontFamily: "var(--font-ui)",
+                  opacity: eliminazione ? 0.5 : 1,
+                }}
+              >
+                {eliminazione ? "..." : "Elimina definitivamente"}
               </button>
             </div>
           </div>
