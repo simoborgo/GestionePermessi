@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, hashPin } from "@/lib/auth";
+import { generaEmailPlaceholderUnivoca } from "@/lib/utenti";
 
 // GET: lista utenti (solo RESPONSABILE)
 export async function GET() {
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
 
   const { email, pin, nome, cognome, ruolo, responsabileId } = await req.json();
 
-  if (!email || !pin || !nome || !cognome) {
+  if (!pin || !nome || !cognome) {
     return NextResponse.json({ errore: "Dati obbligatori mancanti" }, { status: 400 });
   }
 
@@ -46,16 +47,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ errore: "Il PIN deve essere di esattamente 5 cifre" }, { status: 400 });
   }
 
-  const esistente = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-  if (esistente) {
-    return NextResponse.json({ errore: "Email già registrata" }, { status: 409 });
+  let emailFinale: string;
+  let emailGenerata = false;
+
+  if (email && email.trim()) {
+    emailFinale = email.trim().toLowerCase();
+    const esistente = await prisma.user.findUnique({ where: { email: emailFinale } });
+    if (esistente) {
+      return NextResponse.json({ errore: "Email già registrata" }, { status: 409 });
+    }
+  } else {
+    // Dipendente senza email aziendale: assegna un'email placeholder, non farà mai login
+    emailFinale = await generaEmailPlaceholderUnivoca(prisma, nome, cognome);
+    emailGenerata = true;
   }
 
   const pinHash = await hashPin(pin);
 
   const utente = await prisma.user.create({
     data: {
-      email: email.toLowerCase(),
+      email: emailFinale,
       pin: pinHash,
       nome,
       cognome,
@@ -65,5 +76,5 @@ export async function POST(req: NextRequest) {
     select: { id: true, email: true, nome: true, cognome: true, ruolo: true, attivo: true },
   });
 
-  return NextResponse.json({ utente, pinInCiaro: pin }, { status: 201 });
+  return NextResponse.json({ utente, pinInCiaro: pin, emailGenerata }, { status: 201 });
 }

@@ -10,6 +10,7 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:import-personale": "ts-node --project tsconfig.seed.json prisma/import-personale.ts",
     "db:studio": "prisma studio"
   },
   "prisma": {

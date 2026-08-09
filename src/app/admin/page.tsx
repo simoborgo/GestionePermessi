@@ -11,9 +11,10 @@ export default async function AdminPage() {
 
   const dipendenti = await prisma.user.findMany({
     where: { responsabileId: session.userId },
-    select: { id: true },
+    select: { id: true, nome: true, cognome: true },
+    orderBy: { cognome: "asc" },
   });
-  const ids = dipendenti.map((d: { id: string }) => d.id);
+  const ids = dipendenti.map((d) => d.id);
   ids.push(session.userId);
 
   const richieste = await prisma.richiesta.findMany({
@@ -51,6 +52,7 @@ export default async function AdminPage() {
             createdAt: r.createdAt.toISOString(),
             updatedAt: r.updatedAt.toISOString(),
           }))}
+          team={dipendenti}
         />
       </main>
     </div>

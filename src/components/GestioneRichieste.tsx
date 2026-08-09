@@ -19,6 +19,24 @@ interface Richiesta {
   utente: { nome: string; cognome: string; email: string };
 }
 
+interface MembroTeam {
+  id: string;
+  nome: string;
+  cognome: string;
+}
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px 16px",
+  border: "1px solid var(--color-grey-icon)",
+  borderRadius: "var(--radius-button)",
+  fontSize: "14px",
+  fontFamily: "var(--font-ui)",
+  color: "var(--color-black)",
+  outline: "none",
+  backgroundColor: "white",
+};
+
 function BadgeStato({ stato }: { stato: string }) {
   const styles: Record<string, { bg: string; color: string; label: string }> = {
     PENDING:   { bg: "#FEF3E4", color: "#C06A10", label: "In attesa" },
@@ -36,12 +54,81 @@ function BadgeStato({ stato }: { stato: string }) {
   );
 }
 
-export default function GestioneRichieste({ richiesteIniziali }: { richiesteIniziali: Richiesta[] }) {
+const formInserimentoVuoto = {
+  dipendenteId: "",
+  tipo: "PERMESSO" as "PERMESSO" | "FERIE",
+  dataInizio: "",
+  dataFine: "",
+  oraInizio: "",
+  oraFine: "",
+  note: "",
+  legge104: false,
+  motivazione: "",
+};
+
+export default function GestioneRichieste({
+  richiesteIniziali,
+  team = [],
+}: {
+  richiesteIniziali: Richiesta[];
+  team?: MembroTeam[];
+}) {
   const [richieste, setRichieste] = useState(richiesteIniziali);
   const [filtro, setFiltro] = useState<"TUTTE" | "PENDING" | "APPROVATA" | "RIFIUTATA">("PENDING");
   const [modalAperta, setModalAperta] = useState<Richiesta | null>(null);
   const [motivazione, setMotivazione] = useState("");
   const [elaborazione, setElaborazione] = useState(false);
+
+  const [modalInserimento, setModalInserimento] = useState(false);
+  const [formInserimento, setFormInserimento] = useState(formInserimentoVuoto);
+  const [erroreInserimento, setErroreInserimento] = useState("");
+  const [caricamentoInserimento, setCaricamentoInserimento] = useState(false);
+
+  async function inserisciRichiesta() {
+    setErroreInserimento("");
+    if (!formInserimento.dipendenteId) {
+      setErroreInserimento("Seleziona un dipendente");
+      return;
+    }
+    if (formInserimento.tipo === "PERMESSO" && (!formInserimento.oraInizio || !formInserimento.oraFine)) {
+      setErroreInserimento("Per il permesso indicare l'orario di inizio e fine");
+      return;
+    }
+    if (formInserimento.tipo === "FERIE" && formInserimento.dataFine < formInserimento.dataInizio) {
+      setErroreInserimento("La data di fine non può essere precedente alla data di inizio");
+      return;
+    }
+
+    setCaricamentoInserimento(true);
+    try {
+      const res = await fetch("/api/richieste/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: formInserimento.dipendenteId,
+          tipo: formInserimento.tipo,
+          dataInizio: formInserimento.dataInizio,
+          dataFine: formInserimento.tipo === "PERMESSO" ? formInserimento.dataInizio : formInserimento.dataFine,
+          oraInizio: formInserimento.tipo === "PERMESSO" ? formInserimento.oraInizio : undefined,
+          oraFine: formInserimento.tipo === "PERMESSO" ? formInserimento.oraFine : undefined,
+          note: formInserimento.note,
+          legge104: formInserimento.legge104,
+          motivazione: formInserimento.motivazione,
+        }),
+      });
+      const dati = await res.json();
+      if (!res.ok) {
+        setErroreInserimento(dati.errore || "Errore nell'inserimento");
+        return;
+      }
+      setRichieste((prev) => [dati.richiesta, ...prev]);
+      setFiltro("APPROVATA");
+      setModalInserimento(false);
+      setFormInserimento(formInserimentoVuoto);
+    } finally {
+      setCaricamentoInserimento(false);
+    }
+  }
 
   const richiesteFiltrate =
     filtro === "TUTTE" ? richieste : richieste.filter((r) => r.stato === filtro);
@@ -81,7 +168,8 @@ export default function GestioneRichieste({ richiesteIniziali }: { richiesteIniz
   return (
     <>
       {/* Filtri */}
-      <div className="flex gap-2 mb-6 flex-wrap">
+      <div className="flex gap-2 mb-6 flex-wrap items-center justify-between">
+      <div className="flex gap-2 flex-wrap">
         {filtriConfig.map(({ k, l }) => (
           <button
             key={k}
@@ -110,6 +198,18 @@ export default function GestioneRichieste({ richiesteIniziali }: { richiesteIniz
             )}
           </button>
         ))}
+      </div>
+
+        <button
+          onClick={() => setModalInserimento(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 text-white text-sm font-bold uppercase tracking-widest transition"
+          style={{ backgroundColor: "var(--color-primary)", borderRadius: "var(--radius-button)", fontFamily: "var(--font-ui)" }}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Inserisci richiesta
+        </button>
       </div>
 
       {/* Lista */}
@@ -285,6 +385,216 @@ export default function GestioneRichieste({ richiesteIniziali }: { richiesteIniz
                 }}
               >
                 Approva
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal inserimento rapido (admin) */}
+      {modalInserimento && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div
+            className="bg-white w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto"
+            style={{ borderRadius: "var(--radius-modal)" }}
+          >
+            <div className="p-6 border-b" style={{ borderColor: "var(--color-offwhite)" }}>
+              <h3
+                className="text-xl font-semibold"
+                style={{ fontFamily: "var(--font-display)", color: "var(--color-black)" }}
+              >
+                Inserisci richiesta
+              </h3>
+              <p className="text-sm mt-1" style={{ color: "var(--color-grey-mid)" }}>
+                Crea una richiesta già approvata per conto di un dipendente
+              </p>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-widest mb-1.5" style={{ color: "var(--color-grey-mid)" }}>
+                  Dipendente
+                </label>
+                <select
+                  value={formInserimento.dipendenteId}
+                  onChange={(e) => setFormInserimento((f) => ({ ...f, dipendenteId: e.target.value }))}
+                  style={inputStyle}
+                >
+                  <option value="">Seleziona...</option>
+                  {team.map((m) => (
+                    <option key={m.id} value={m.id}>{m.nome} {m.cognome}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-widest mb-2" style={{ color: "var(--color-grey-mid)" }}>
+                  Tipo di richiesta
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {(["PERMESSO", "FERIE"] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setFormInserimento((f) => ({ ...f, tipo: t }))}
+                      className="p-3 border-2 text-left transition"
+                      style={{
+                        borderColor: formInserimento.tipo === t ? "var(--color-primary)" : "var(--color-offwhite)",
+                        backgroundColor: formInserimento.tipo === t ? "#FEF3E4" : "white",
+                        borderRadius: "var(--radius-button)",
+                      }}
+                    >
+                      <p className="text-sm font-semibold" style={{ color: "var(--color-black)" }}>
+                        {t === "FERIE" ? "Ferie" : "Permesso orario"}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {formInserimento.tipo === "PERMESSO" ? (
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-widest mb-1.5" style={{ color: "var(--color-grey-mid)" }}>
+                    Data
+                  </label>
+                  <input
+                    type="date"
+                    value={formInserimento.dataInizio}
+                    onChange={(e) => setFormInserimento((f) => ({ ...f, dataInizio: e.target.value }))}
+                    style={inputStyle}
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium uppercase tracking-widest mb-1.5" style={{ color: "var(--color-grey-mid)" }}>
+                      Data inizio
+                    </label>
+                    <input
+                      type="date"
+                      value={formInserimento.dataInizio}
+                      onChange={(e) => setFormInserimento((f) => ({ ...f, dataInizio: e.target.value }))}
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium uppercase tracking-widest mb-1.5" style={{ color: "var(--color-grey-mid)" }}>
+                      Data fine
+                    </label>
+                    <input
+                      type="date"
+                      value={formInserimento.dataFine}
+                      onChange={(e) => setFormInserimento((f) => ({ ...f, dataFine: e.target.value }))}
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {formInserimento.tipo === "PERMESSO" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium uppercase tracking-widest mb-1.5" style={{ color: "var(--color-grey-mid)" }}>
+                      Ora inizio
+                    </label>
+                    <input
+                      type="time"
+                      value={formInserimento.oraInizio}
+                      onChange={(e) => setFormInserimento((f) => ({ ...f, oraInizio: e.target.value }))}
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium uppercase tracking-widest mb-1.5" style={{ color: "var(--color-grey-mid)" }}>
+                      Ora fine
+                    </label>
+                    <input
+                      type="time"
+                      value={formInserimento.oraFine}
+                      onChange={(e) => setFormInserimento((f) => ({ ...f, oraFine: e.target.value }))}
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-widest mb-1.5" style={{ color: "var(--color-grey-mid)" }}>
+                  Note <span style={{ color: "var(--color-grey-icon)", textTransform: "none", letterSpacing: 0 }}>(facoltativo)</span>
+                </label>
+                <textarea
+                  value={formInserimento.note}
+                  onChange={(e) => setFormInserimento((f) => ({ ...f, note: e.target.value }))}
+                  rows={2}
+                  style={{ ...inputStyle, resize: "none" }}
+                />
+              </div>
+
+              <div
+                className="flex items-center gap-3 p-4 border cursor-pointer"
+                style={{
+                  borderColor: formInserimento.legge104 ? "var(--color-primary)" : "var(--color-offwhite)",
+                  backgroundColor: formInserimento.legge104 ? "#FEF3E4" : "white",
+                  borderRadius: "var(--radius-button)",
+                }}
+                onClick={() => setFormInserimento((f) => ({ ...f, legge104: !f.legge104 }))}
+              >
+                <div
+                  className="w-5 h-5 flex-shrink-0 flex items-center justify-center border-2 transition"
+                  style={{
+                    borderColor: formInserimento.legge104 ? "var(--color-primary)" : "var(--color-grey-icon)",
+                    backgroundColor: formInserimento.legge104 ? "var(--color-primary)" : "white",
+                    borderRadius: "4px",
+                  }}
+                >
+                  {formInserimento.legge104 && (
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: "var(--color-black)" }}>Legge 104</p>
+                  <p className="text-xs" style={{ color: "var(--color-grey-mid)" }}>Assenza ai sensi della Legge 104/92</p>
+                </div>
+              </div>
+
+              {erroreInserimento && (
+                <div
+                  className="text-sm px-4 py-3"
+                  style={{ backgroundColor: "#FEF2F2", border: "1px solid #FECACA", color: "#B91C1C", borderRadius: "var(--radius-button)" }}
+                >
+                  {erroreInserimento}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 pt-0 flex gap-3">
+              <button
+                onClick={() => { setModalInserimento(false); setFormInserimento(formInserimentoVuoto); setErroreInserimento(""); }}
+                disabled={caricamentoInserimento}
+                className="flex-1 py-2.5 text-sm font-bold uppercase tracking-widest border transition"
+                style={{
+                  borderColor: "var(--color-grey-icon)",
+                  color: "var(--color-grey-mid)",
+                  borderRadius: "var(--radius-button)",
+                  fontFamily: "var(--font-ui)",
+                }}
+              >
+                Annulla
+              </button>
+              <button
+                onClick={inserisciRichiesta}
+                disabled={caricamentoInserimento}
+                className="flex-1 py-2.5 text-white text-sm font-bold uppercase tracking-widest transition"
+                style={{
+                  backgroundColor: "var(--color-primary)",
+                  borderRadius: "var(--radius-button)",
+                  fontFamily: "var(--font-ui)",
+                  opacity: caricamentoInserimento ? 0.5 : 1,
+                }}
+              >
+                {caricamentoInserimento ? "..." : "Crea richiesta"}
               </button>
             </div>
           </div>

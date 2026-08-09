@@ -89,7 +89,10 @@ export default function GestioneUtenti({
       const dati = await res.json();
       if (!res.ok) { setErrore(dati.errore); return; }
       setUtenti((prev) => [dati.utente, ...prev]);
-      setSuccesso(`Utente creato. PIN assegnato: ${dati.pinInCiaro}`);
+      setSuccesso(
+        (dati.emailGenerata ? `Email generata automaticamente: ${dati.utente.email}. ` : "") +
+        `Utente creato. PIN assegnato: ${dati.pinInCiaro}`
+      );
     } finally { setCaricamento(false); }
   }
 
@@ -273,7 +276,9 @@ export default function GestioneUtenti({
                   </div>
                   {modalMode === "crea" && (
                     <div>
-                      <label className="block text-xs font-medium uppercase tracking-widest mb-1" style={{ color: "var(--color-grey-mid)" }}>Email</label>
+                      <label className="block text-xs font-medium uppercase tracking-widest mb-1" style={{ color: "var(--color-grey-mid)" }}>
+                        Email <span style={{ color: "var(--color-grey-icon)", textTransform: "none", letterSpacing: 0 }}>(facoltativa se il dipendente non ne ha una aziendale)</span>
+                      </label>
                       <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} style={inputStyle} />
                     </div>
                   )}
