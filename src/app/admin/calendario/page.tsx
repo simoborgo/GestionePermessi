@@ -21,7 +21,7 @@ export default async function CalendarioPage() {
       userId: { in: ids },
       stato: { in: ["APPROVATA", "PENDING"] },
     },
-    include: { utente: { select: { cognome: true } } },
+    include: { utente: { select: { nome: true, cognome: true } } },
   });
 
   const eventi = richieste.map((r) => {
@@ -44,10 +44,15 @@ export default async function CalendarioPage() {
 
     return {
       id: r.id,
-      title: r.utente.cognome,
+      nome: r.utente.nome,
+      cognome: r.utente.cognome,
+      tipo: r.tipo,
+      stato: r.stato as "PENDING" | "APPROVATA",
       start,
       end,
       allDay: r.tipo === "FERIE",
+      oraInizio: r.oraInizio,
+      oraFine: r.oraFine,
       color: r.stato === "PENDING" ? "#F59E0B" : "#10B981",
     };
   });
