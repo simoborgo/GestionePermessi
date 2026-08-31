@@ -21,15 +21,8 @@ export async function GET(req: NextRequest) {
 
   if (session.ruolo === "DIPENDENTE") {
     where.userId = session.userId;
-  } else {
-    const dipendenti = await prisma.user.findMany({
-      where: { responsabileId: session.userId },
-      select: { id: true },
-    });
-    const ids = dipendenti.map((d: { id: string }) => d.id);
-    ids.push(session.userId);
-    where.userId = { in: ids };
   }
+  // RESPONSABILE vede il calendario di tutti i dipendenti, non solo del proprio team
 
   const richieste = await prisma.richiesta.findMany({
     where,

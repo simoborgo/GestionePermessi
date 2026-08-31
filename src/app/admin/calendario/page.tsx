@@ -9,16 +9,8 @@ export default async function CalendarioPage() {
   if (!session) redirect("/login");
   if (session.ruolo !== "RESPONSABILE") redirect("/dashboard");
 
-  const dipendenti = await prisma.user.findMany({
-    where: { responsabileId: session.userId },
-    select: { id: true },
-  });
-  const ids = dipendenti.map((d: { id: string }) => d.id);
-  ids.push(session.userId);
-
   const richieste = await prisma.richiesta.findMany({
     where: {
-      userId: { in: ids },
       stato: { in: ["APPROVATA", "PENDING"] },
     },
     include: { utente: { select: { nome: true, cognome: true } } },
@@ -70,7 +62,7 @@ export default async function CalendarioPage() {
             Calendario assenze
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--color-grey-mid)" }}>
-            Ferie e permessi del team
+            Ferie e permessi di tutti i dipendenti
           </p>
         </div>
 
