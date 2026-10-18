@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
         oraInizio: richiesta.oraInizio,
         oraFine: richiesta.oraFine,
         note: richiesta.note,
+        legge104: richiesta.legge104,
       },
       dipendente: richiesta.utente,
     });
