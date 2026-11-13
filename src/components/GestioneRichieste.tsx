@@ -516,8 +516,10 @@ export default function GestioneRichieste({
                   style={inputStyle}
                 >
                   <option value="">Seleziona...</option>
-                  {team.map((m) => (
-                    <option key={m.id} value={m.id}>{m.nome} {m.cognome}</option>
+                  {[...team]
+                    .sort((a, b) => a.cognome.localeCompare(b.cognome, "it") || a.nome.localeCompare(b.nome, "it"))
+                    .map((m) => (
+                    <option key={m.id} value={m.id}>{m.cognome} {m.nome}</option>
                   ))}
                 </select>
               </div>
@@ -544,6 +546,30 @@ export default function GestioneRichieste({
                       </p>
                     </button>
                   ))}
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  {([
+                    { etichetta: "Mezza giornata mattina", orario: "07:30–12:00", oraInizio: "07:30", oraFine: "12:00" },
+                    { etichetta: "Mezza giornata pomeriggio", orario: "13:30–18:00", oraInizio: "13:30", oraFine: "18:00" },
+                  ]).map((p) => {
+                    const attivo = formInserimento.tipo === "PERMESSO" && formInserimento.oraInizio === p.oraInizio && formInserimento.oraFine === p.oraFine;
+                    return (
+                      <button
+                        key={p.etichetta}
+                        type="button"
+                        onClick={() => setFormInserimento((f) => ({ ...f, tipo: "PERMESSO", oraInizio: p.oraInizio, oraFine: p.oraFine }))}
+                        className="p-3 border-2 text-left transition"
+                        style={{
+                          borderColor: attivo ? "var(--color-primary)" : "var(--color-offwhite)",
+                          backgroundColor: attivo ? "#FEF3E4" : "white",
+                          borderRadius: "var(--radius-button)",
+                        }}
+                      >
+                        <p className="text-sm font-semibold" style={{ color: "var(--color-black)" }}>{p.etichetta}</p>
+                        <p className="text-xs" style={{ color: "var(--color-grey-mid)" }}>{p.orario}</p>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
