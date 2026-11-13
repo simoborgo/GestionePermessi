@@ -33,6 +33,8 @@ function eventiDelGiorno(eventi: Evento[], data: Date): Evento[] {
     const end = new Date(e.end);
     const d = new Date(data);
     start.setHours(0, 0, 0, 0);
+    // Gli eventi allDay (FERIE) hanno la fine esclusiva: l'ultimo giorno è il precedente
+    if (e.allDay) end.setDate(end.getDate() - 1);
     end.setHours(23, 59, 59, 999);
     d.setHours(12, 0, 0, 0);
     return d >= start && d <= end;
